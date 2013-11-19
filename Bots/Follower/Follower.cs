@@ -116,9 +116,10 @@ namespace Follower
                 new Decorator(ret => Variables.isTownRunStarted && Variables.vendored && !Variables.stashed, BotLogic.DoStashing()),
                 new Decorator(ret => !Variables.isTownRunFinished, BotLogic.DoFinishTownRun()),
                 new PrioritySelector(
-                    new Decorator(ret => Variables.cameByTownPortal, BotLogic.TakeTownPortal()),
-                    new Decorator(ret => Variables.cameByWaypoint && !leader.IsInTown, BotLogic.TakeWaypoint()),
-                    new Decorator(ret => !Variables.cameByWaypoint && !Variables.cameByTownPortal && !leader.IsInTown, BotLogic.TakeWaypoint()))
+                    new Decorator(ret => Variables.cameByTownPortal, BotLogic.TakeTownPortal(true)),
+                    new Decorator(ret => Variables.cameByWaypoint && !leader.IsInTown && GuiApi.Waypoint.AvailableWaypoints.Contains(leader.Area), BotLogic.TakeWaypoint()),
+                    new Decorator(ret => !Variables.cameByWaypoint && !Variables.cameByTownPortal && !leader.IsInTown && GuiApi.Waypoint.AvailableWaypoints.Contains(leader.Area), BotLogic.TakeWaypoint())),
+                    new Decorator(ret => !Variables.cameByWaypoint && !Variables.cameByTownPortal && !leader.IsInTown && !GuiApi.Waypoint.AvailableWaypoints.Contains(leader.Area), BotLogic.TakeTownPortal(true))
 
             );
         }
@@ -147,7 +148,7 @@ namespace Follower
             return new PrioritySelector(
                 BotLogic.Fight(),
 
-                new Decorator(ret => leader.Player == null && LokiPoe.EntityManager.OfType<Portal>().Count(d => d.Distance <= 40) > 0, BotLogic.TakeTownPortal()),
+                new Decorator(ret => leader.Player == null && LokiPoe.EntityManager.OfType<Portal>().Count(d => d.Distance <= 40) > 0, BotLogic.TakeTownPortal(false)),
                 new Decorator(ret => leader.Player == null && LokiPoe.EntityManager.Waypoint().Distance <= 40, BotLogic.TakeWaypoint()),
                 new Decorator(ret => leader.Player == null && LokiPoe.EntityManager.OfType<AreaTransition>().Count(d => d.Distance <= 40) > 0, BotLogic.UseTransistion()),
 

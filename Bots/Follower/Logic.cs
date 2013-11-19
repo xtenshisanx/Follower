@@ -399,20 +399,51 @@ namespace Follower
             );
         }
         #endregion
+        #region CreateTownPortal
+        public static Composite CreateTownPortal()
+        {
+            return new Action(delegate
+            {
+                InventoryItem portalScroll = LokiPoe.Me.Inventory.Main.FindItem("Portal Scroll");
+                if (portalScroll == null)
+                {
+                    return RunStatus.Failure;
+                }
+                else
+                {
+                    portalScroll.Use();
+                    SharedCode.SetForcedWait(1000f);
+                    return RunStatus.Success;
+                }
+            }
+            );
+        }
+        #endregion
         #region TakeTownPortal
         /// <summary>
         /// Moves to Townportal and takes it
         /// </summary>
-        public static Composite TakeTownPortal()
+        public static Composite TakeTownPortal(bool inTown)
         {
-            return new PrioritySelector(
-                new Decorator(param0 => LokiPoe.Me.Position.Distance(SharedLogic.GuessPortalLocation()) > 15, new Action(delegate
+            if(inTown)
+            { 
+                return new PrioritySelector(
+                    new Decorator(param0 => LokiPoe.Me.Position.Distance(SharedLogic.GuessPortalLocation()) > 15, new Action(delegate
+                    {
+                        Vector2i PortalLocation = SharedLogic.GuessPortalLocation();
+                        Follower.Log.DebugFormat("Follower(TakePortal): Waypoint is to far away. Moving in range");
+                        Navigator.BeginMoveTo(new MoveCommand(PortalLocation, "Follower(TakePortal): Waypoint is to far away moving to range", null, null, 3000));
+                    })),
+                    new Decorator(param0 => LokiPoe.Me.Position.Distance(SharedLogic.GuessPortalLocation()) <= 15 && (!Follower.leader.IsInTown || Follower.leader.Player.Position.Distance(SharedLogic.GuessPortalLocation()) <= 20), UseTownPortal()));
+            }
+            else
             {
-                Vector2i PortalLocation = SharedLogic.GuessPortalLocation();
-                Follower.Log.DebugFormat("Follower(TakePortal): Waypoint is to far away. Moving in range");
-                Navigator.BeginMoveTo(new MoveCommand(PortalLocation, "Follower(TakePortal): Waypoint is to far away moving to range", null, null, 3000));
-            })),
-                new Decorator(param0 => LokiPoe.Me.Position.Distance(SharedLogic.GuessPortalLocation()) <= 15 && Follower.leader.Player.Position.Distance(SharedLogic.GuessPortalLocation()) <= 20, UseTownPortal()));
+                return new ProbabilitySelector(
+                    new Decorator(param0 => LokiPoe.EntityManager.OfType<Portal>().FirstOrDefault() == null, new Sequence(
+                        new Action(delegate { Follower.Log.Debug("Follower(TakeTownPortal): Could not found Portal."); }),
+                        CreateTownPortal())),
+                    new Decorator(param0 => LokiPoe.EntityManager.OfType<Portal>().FirstOrDefault() != null, UseTownPortal()));
+            }
         }
         #endregion
         #region UseWaypoint
@@ -432,6 +463,8 @@ namespace Follower
             })),
                 new Decorator(ret => GuiApi.Waypoint.IsWorldPanelWindowOpen, new Action(delegate
             {
+                if (Follower.leader.Area.IsTown)
+                    return;
                 Follower.Log.DebugFormat("Follower(TakeWaypoint): Taking Waypoint to Leaders area");
                 GuiApi.Waypoint.Take(Follower.leader.Area, false);
                 SharedCode.SetForcedWait(100f, 0f);

@@ -78,7 +78,16 @@ namespace Follower
         {
             get
             {
-                return Functions.GetAreaStringByNumber(PartyMember.PlayerEntry.AreaId, Settings.difficulty).Contains("town");
+                Boolean result = Functions.GetAreaStringByNumber(PartyMember.PlayerEntry.AreaId, Settings.difficulty).Contains("town");
+                if(result)
+                {
+                    Follower.Log.Debug("Follower(IsLeaderInTown): Leader is in Town");
+                }
+                else
+                {
+                    Follower.Log.Debug("Follower(IsLeaderInTown): Leader is not in Town");
+                }
+                return result;
             }
             
         }

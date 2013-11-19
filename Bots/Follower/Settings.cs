@@ -6,7 +6,7 @@ namespace Follower
 {
     class Settings
     {
-        public static String leaderName = "CHARACTERNAME";
+        public static String leaderName = "BadassRange";
 
         public static float lootDistance = 60;
         public static float fightDistance = 60;
