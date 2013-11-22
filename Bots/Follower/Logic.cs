@@ -24,6 +24,8 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using Loki.Game.NativeWrappers;
 
+using Follower;
+
 namespace Follower
 {
     public class BotLogic
@@ -327,9 +329,9 @@ namespace Follower
                 //Start Sequence
                 new Sequence(
                 //Check for Chests
-                    new Decorator(_check_chests => Variables.chestTimer.IsFinished && Targeting.Loot.Targets.Where(obj => obj is Chest).OrderBy(t => t.Distance).Count(d => d.Distance <= Settings.lootDistance) > 0,
+                    new Decorator(_check_chests => Variables.chestTimer.IsFinished && Targeting.Loot.Targets.Where(obj => obj is Chest).OrderBy(t => t.Distance).Count(d => d.Distance <= Settings.Instance.lootDistance) > 0,
                 //Get a Chest    
-                    new Action(_get_chest => { chest = Targeting.Loot.Targets.OfType<Chest>().OrderBy(t => t.Distance).FirstOrDefault(d => d.Distance <= Settings.lootDistance); })),
+                    new Action(_get_chest => { chest = Targeting.Loot.Targets.OfType<Chest>().OrderBy(t => t.Distance).FirstOrDefault(d => d.Distance <= Settings.Instance.lootDistance); })),
                     new DecoratorContinue(_noChest => chest == null, new Action(delegate { return RunStatus.Success; })),
                 //Move Into Range if needed
                     new DecoratorContinue(_move_to => chest != null && chest.Distance > 30, CommonBehaviors.MoveTo(ret => chest.Position, ret => "Allrounder(OpenChests): Moving to Chest")),
@@ -350,7 +352,7 @@ namespace Follower
             PoEObject item = null;
             return new PrioritySelector(
                 new Sequence(
-                    new Decorator(_check_loot => Variables.lootTimer.IsFinished && Targeting.Loot.Targets.Where(obj => obj is WorldItem).OrderBy(t => t.Distance).Count(d => d.Distance <= Settings.lootDistance) > 0,
+                    new Decorator(_check_loot => Variables.lootTimer.IsFinished && Targeting.Loot.Targets.Where(obj => obj is WorldItem).OrderBy(t => t.Distance).Count(d => d.Distance <= Settings.Instance.lootDistance) > 0,
                     new Action(_get_item => { item = Targeting.Loot.Targets.OfType<WorldItem>().OrderBy(t => t.Distance).FirstOrDefault(obj => LokiPoe.Me.Inventory.Main.CanFitItem((obj as WorldItem).Item)); })),
                     new DecoratorContinue(_move_to => item.Distance > 30, CommonBehaviors.MoveTo(ret => item.Position, ret => "Allrounder(OpenChests): Moving to Item")),
                     new WaitContinue(3, _wait_for_distance => item != null && item.Distance <= 30, new Action(delegate { return RunStatus.Success; })),
@@ -463,7 +465,7 @@ namespace Follower
             })),
                 new Decorator(ret => GuiApi.Waypoint.IsWorldPanelWindowOpen, new Action(delegate
             {
-                if (Follower.leader.Area.IsTown)
+                if (Follower.leader.Area.IsTown && LokiPoe.Me.IsInTown)
                     return;
                 Follower.Log.DebugFormat("Follower(TakeWaypoint): Taking Waypoint to Leaders area");
                 GuiApi.Waypoint.Take(Follower.leader.Area, false);
@@ -500,6 +502,36 @@ namespace Follower
             );
         }
         #endregion
+        #region GetWaypoint
+        /// <summary>
+        /// Gets the Waypoint if in Range
+        /// </summary>
+        public static Composite GetWaypoint()
+        {
+            return new PrioritySelector(
+                new Decorator(param0 => LokiPoe.EntityManager.Waypoint() != null,
+                    new PrioritySelector(
+                        new Decorator(param0 => LokiPoe.EntityManager.Waypoint().Distance > 15, new Action(delegate
+                        {
+                            Vector2i WaypointLocation = LokiPoe.EntityManager.Waypoint().Position;
+                            Follower.Log.DebugFormat("Follower(GetWaypoint): Waypoint is to far away. Moving in range");
+                            Navigator.BeginMoveTo(new MoveCommand(WaypointLocation, "Follower(TakeWaypoint): Waypoint is to far away moving to range", null, null, 3000));
+                        })),
+                        new Decorator(param0 => LokiPoe.Me.Position.Distance(LokiPoe.EntityManager.Waypoint().Position) <= 15,
+                            new Decorator(ret => !GuiApi.Waypoint.IsWorldPanelWindowOpen, new Action(delegate
+                            {
+                                PoEObject Waypoint = LokiPoe.EntityManager.Waypoint();
+                                Navigator.BeginMoveTo((MoveCommand)null);
+                                Follower.Log.DebugFormat("Follower(GetWaypoint): Interacting with Waypoint");
+                                Waypoint.Interact();
+                                SharedCode.SetForcedWait(GuiApi.Waypoint.IsWorldPanelWindowOpen ? 3000f : 1000f, 0.0f);
+                            }))
+                        )
+                    )
+                )
+            );
+        }
+        #endregion
         #region UseTransistion
         /// <summary>
         /// Uses the next Transistion
@@ -518,5 +550,6 @@ namespace Follower
             return new Action(param0 => Loki.Bot.Pathfinding.Navigator.MoveCommand.DistanceFromDestination > 25.0 ? RunStatus.Success : RunStatus.Failure);
         }
         #endregion
+
     }
 }

@@ -3,10 +3,29 @@ using System.Linq;
 using Loki;
 using Loki.Game;
 using Loki.Game.Objects;
+using Loki.Game.Dat;
 namespace Follower
 {
     class Functions
     {
+        #region DoIHaveWaypointOfThisArea
+        /// <summary>
+        /// Returns True or False if we got this areawaypoint or not
+        /// </summary>
+        /// <returns>True/False</returns>
+        public static Boolean DoIHaveWaypointOfThisArea()
+        {
+            Boolean result = false;
+            foreach(WorldAreaEntry worldArea in GuiApi.Waypoint.AvailableWaypoints)
+            {
+                if (worldArea.Id.Equals(LokiPoe.CurrentLocalData.WorldAreaId))
+                {
+                    result = true;
+                }
+            }
+            return result;
+        }
+        #endregion
         #region GetActOfMe
         /// <summary>
         /// Returns the current actnumber

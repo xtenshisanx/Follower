@@ -27,7 +27,7 @@ using Loki.Game.NativeWrappers;
 
 namespace Follower
 {
-    class Leader
+    public class Leader
     {
         public String name;
         
@@ -78,7 +78,7 @@ namespace Follower
         {
             get
             {
-                Boolean result = Functions.GetAreaStringByNumber(PartyMember.PlayerEntry.AreaId, Settings.difficulty).Contains("town");
+                Boolean result = Functions.GetAreaStringByNumber(PartyMember.PlayerEntry.AreaId, Settings.Instance.difficulty).Contains("town");
                 if(result)
                 {
                     Follower.Log.Debug("Follower(IsLeaderInTown): Leader is in Town");
@@ -114,7 +114,7 @@ namespace Follower
             get
             {
                 Int32 result = 0;
-                String area = Functions.GetAreaStringByNumber(PartyMember.PlayerEntry.AreaId, Settings.difficulty);
+                String area = Functions.GetAreaStringByNumber(PartyMember.PlayerEntry.AreaId, Settings.Instance.difficulty);
                 if (area[2].ToString().Equals("1"))
                     result = 1;
                 else if (area[2].ToString().Equals("2"))
@@ -135,7 +135,7 @@ namespace Follower
             get
             {
                 WorldAreaEntry result = null;
-                String area = Functions.GetAreaStringByNumber(PartyMember.PlayerEntry.AreaId, Settings.difficulty);
+                String area = Functions.GetAreaStringByNumber(PartyMember.PlayerEntry.AreaId, Settings.Instance.difficulty);
                 foreach (WorldAreaEntry _entry in GuiApi.Waypoint.AvailableWaypoints)
                 {
                     if (_entry.Id == area)

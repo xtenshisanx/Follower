@@ -26,20 +26,29 @@ using Loki.Game.NativeWrappers;
 
 namespace Follower
 {
-    class Follower : IBot
+    public class Follower : IBot
     { 
+
         public Boolean RequiresGameInput { get { return true; } }
 
         public PulseFlags PulseFlags { get { return PulseFlags.All; } }
 
         public static ILog Log = Logger.GetLoggerInstanceForType();
 
-        public System.Windows.Window ConfigWindow { get { return null; } }
+        public System.Windows.Window ConfigWindow
+        {
+            get
+            {
+                new SettingsWindow().ShowDialog();
+                return null;
+            }
+        }
 
         private Int32 DefaultTPS = 0;
         private Int32 WantedTPS = 20;
 
-        public static Leader leader = new Leader(Settings.leaderName);
+        public static Leader leader = new Leader(Settings.Instance.leaderName);
+        public static WaitTimer recheckForNewItems = new WaitTimer(TimeSpan.FromSeconds(5));
 
         public String Name { get { return "Follower by xTenshiSanx"; } }
         public String Description { get { return "Follows a definied Character and fight with him"; } }
@@ -99,7 +108,7 @@ namespace Follower
                 Variables.isWaitingForMaster = false;
             }
             //Chicken
-            if (LokiPoe.Me.HealthPercent <= Settings.chickenHealthPoints)
+            if (LokiPoe.Me.HealthPercent <= Settings.Instance.chickenHealthPoints)
                 GuiApi.Logout();
         }
         #endregion
@@ -147,10 +156,10 @@ namespace Follower
         {
             return new PrioritySelector(
                 BotLogic.Fight(),
-
+                new Decorator(ret => LokiPoe.EntityManager.Waypoint() != null && !Functions.DoIHaveWaypointOfThisArea(), BotLogic.GetWaypoint()),
                 new Decorator(ret => leader.Player == null && LokiPoe.EntityManager.OfType<Portal>().Count(d => d.Distance <= 40) > 0, BotLogic.TakeTownPortal(false)),
                 new Decorator(ret => leader.Player == null && LokiPoe.EntityManager.Waypoint().Distance <= 40, BotLogic.TakeWaypoint()),
-                new Decorator(ret => leader.Player == null && LokiPoe.EntityManager.OfType<AreaTransition>().Count(d => d.Distance <= 40) > 0, BotLogic.UseTransistion()),
+                new Decorator(ret => leader.Player == null && LokiPoe.EntityManager.OfType<AreaTransition>().Count(d => d.Distance <= 40) > 0, new Action(delegate {LokiPoe.EntityManager.OfType<AreaTransition>().FirstOrDefault().Interact();})),
 
                 new Decorator(ret => Loki.Bot.Pathfinding.Navigator.MoveCommand != null, BotLogic.FinishMove()),
 
