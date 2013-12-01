@@ -28,7 +28,7 @@ namespace Follower
 
         public static List<InventoryItem> SellList;
         public static List<InventoryItem> stashList;
-        public static List<Int32> CheckedItems;
+        //public static List<Int32> CheckedItems;
 
         public static Vector2 actOneTownMiddle = new Vector2i(249, 219).MapToWorld();
         public static Vector2 actTwoTownMiddle = new Vector2i(184, 168).MapToWorld();

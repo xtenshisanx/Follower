@@ -200,7 +200,7 @@ namespace Follower
                     new Decorator(_get_stash => Stash == null, new Action(ret => { Follower.Log.Debug("Follower(DoStashing): Start Stashinglogic."); Stash = LokiPoe.EntityManager.Stash(); })),
                     new Decorator(_found_stash => Stash != null, new Action(ret => { Follower.Log.Debug("Follower(DoStashing): Found Stash."); })),
                 //Move To Stash
-                    new DecoratorContinue(_move_to_stash => Stash.Distance > 30, new Action(ret => { new Input().MoveTo(SharedLogic.GetWalkablePositionNear(Stash).MapToWorld()); })),
+                    new DecoratorContinue(_move_to_stash => Stash.Distance > 30, CommonBehaviors.MoveTo(ret => Stash.Position, ret => "MoveToSTash")),
                 //Wait for Range
                     new WaitContinue(5, ret => Stash.Distance > 10, new Action(delegate { return RunStatus.Success; })),
                 //Interact with Chest
@@ -233,8 +233,10 @@ namespace Follower
                                 Variables.stashList.Add(_item);
                                 Follower.Log.DebugFormat("Follower(DoStartTownRun): Added {0} to Selllist", _item.Name);
                             }
-                            if (Variables.stashList.Count != null)
-                                Follower.Log.DebugFormat("Follower(DoStashing): Items to stash:", Variables.stashList.Count);
+                        }
+                        if (Variables.stashList.Count != 0)
+                        {
+                            Follower.Log.DebugFormat("Follower(DoStashing): Items to stash:", Variables.stashList.Count);
                         }
                     })),
                 //Stashing Items
@@ -356,7 +358,7 @@ namespace Follower
                     new Action(_get_item => { item = Targeting.Loot.Targets.OfType<WorldItem>().OrderBy(t => t.Distance).FirstOrDefault(obj => LokiPoe.Me.Inventory.Main.CanFitItem((obj as WorldItem).Item)); })),
                     new DecoratorContinue(_move_to => item.Distance > 30, CommonBehaviors.MoveTo(ret => item.Position, ret => "Allrounder(OpenChests): Moving to Item")),
                     new WaitContinue(3, _wait_for_distance => item != null && item.Distance <= 30, new Action(delegate { return RunStatus.Success; })),
-                    new Action(delegate { if (item == null) return RunStatus.Failure; (item as WorldItem).InteractRaw(Input.ActionFlags.AutoEquip); Follower.Log.DebugFormat("Follower(TakeLoot): Picked up {0}", (item as WorldItem).Name); Variables.lootTimer.Reset(); return RunStatus.Failure; })));
+                    new Action(delegate { if (item == null) return RunStatus.Failure; (item as WorldItem).Interact(); Follower.Log.DebugFormat("Follower(TakeLoot): Picked up {0}", (item as WorldItem).Name); Variables.lootTimer.Reset(); return RunStatus.Failure; })));
         }
         #endregion
         #region Fight
